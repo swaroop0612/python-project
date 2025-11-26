@@ -1,1 +1,62 @@
+from forex_python.converter import CurrencyRates, CurrencyCodes
+from requests.exceptions import ConnectionError
+from sys import argv
+
+rates = CurrencyRates()
+symbols = CurrencyCodes()
+
+def read_args():
+    amount = 1.0
+    try:
+        amount = float(argv[1])
+        del argv[1]
+    except ValueError:
+        # No amount provided, using default value
+        pass
+
+    # Expected format:
+    # [0] program name
+    # [1] FROM_CURRENCY
+    # [2] "to"
+    # [3] TO_CURRENCY
+    if len(argv) != 4 or argv[2].lower() != 'to':
+        raise Exception("Invalid input format")
+
+    return amount, argv[1].upper(), argv[3].upper()
+
+
+# ---------------- MAIN PROGRAM ---------------- #
+
+usage_msg = "[<amount>] <BASE> to <TARGET>"
+
+# Parse command-line inputs
+try:
+    amt, src, dest = read_args()
+except:
+    print("Usage:")
+    print(usage_msg)
+    exit(1)
+
+try:
+    src_symbol = symbols.get_symbol(src)
+    dest_symbol = symbols.get_symbol(dest)
+
+    # Validate currency codes
+    if src_symbol is None:
+        raise Exception(f"Unknown currency: {src}")
+    if dest_symbol is None:
+        raise Exception(f"Unknown currency: {dest}")
+
+    converted = rates.convert(base_cur=src, dest_cur=dest, amount=amt)
+    converted = round(converted, 3)
+
+    print(f"{amt}{src_symbol} equals {converted}{dest_symbol}")
+
+except ConnectionError:
+    print("Network error: Unable to connect for conversion")
+    exit(1)
+
+except Exception as err:
+    print(err)
+    exit(1)
 
